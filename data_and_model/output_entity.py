@@ -88,7 +88,7 @@ def load_w2i_wemb(path_wikisql, bert=False):
 def load_wikisql(path_wikisql, toy_model, toy_size, bert=False, no_w2i=False, no_hs_tok=False, aug=False):
     # Get data
     train_data, train_table = load_wikisql_data(path_wikisql, mode='train', toy_model=toy_model, toy_size=toy_size, no_hs_tok=no_hs_tok, aug=aug)
-    dev_data, dev_table = load_wikisql_data(path_wikisql, mode='dev', toy_model=toy_model, toy_size=toy_size, no_hs_tok=no_hs_tok)
+    dev_data, dev_table = load_wikisql_data(path_wikisql, mode='test', toy_model=toy_model, toy_size=toy_size, no_hs_tok=no_hs_tok)
 
 
     # Get word vector
@@ -112,7 +112,7 @@ def get_data(path_wikisql, args):
 
 #engine_train = DBEngine("train.db")
 #engine_dev = DBEngine("dev.db")
-train_data, train_table, dev_data, dev_table, train_loader, dev_loader = get_data("./", config)
+train_data, train_table, test_data, test_table, train_loader, test_loader = get_data("./", config)
 count = 0
 count_agg_0 = 0
 count_agg_not_0 = 0
@@ -264,8 +264,8 @@ def process(data,table,output_name):
     json.dump(line, f)
     f.write('\n')
   f.close()
-process(train_data,train_table,"train_knowledge.jsonl")
-process(dev_data,dev_table,"dev_knowledge.jsonl")
+# process(train_data,train_table,"train_knowledge.jsonl")
+process(test_data,test_table,"test_knowledge.jsonl")
 
 
 

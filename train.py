@@ -26,8 +26,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def construct_hyper_param(parser):
-    parser.add_argument("--do_train", default=True)
+    parser.add_argument("--do_train", default=False)
     parser.add_argument('--do_infer', default=False)
+    parser.add_argument('--do_test', default=True)
     parser.add_argument('--infer_loop', default=False)
 
     parser.add_argument("--trained", default=False)
@@ -687,16 +688,16 @@ if __name__ == '__main__':
 
     ## 3. Load data
 
-    train_data, train_table, dev_data, dev_table, train_loader, dev_loader =\
-        get_data(path_wikisql, args)
-    # test_data, test_table = load_wikisql_data(path_wikisql, mode='test', toy_model=args.toy_model, toy_size=args.toy_size, no_hs_tok=True)
-    # test_loader = torch.utils.data.DataLoader(
-    #     batch_size=args.bS,
-    #     dataset=test_data,
-    #     shuffle=False,
-    #     num_workers=4,
-    #     collate_fn=lambda x: x  # now dictionary values are not merged!
-    # )
+    # train_data, train_table, dev_data, dev_table, train_loader, dev_loader =\
+    #     get_data(path_wikisql, args)
+    test_data, test_table = load_wikisql_data(path_wikisql, mode='test', toy_model=args.toy_model, toy_size=args.toy_size, no_hs_tok=True)
+    test_loader = torch.utils.data.DataLoader(
+        batch_size=args.bS,
+        dataset=test_data,
+        shuffle=False,
+        num_workers=4,
+        collate_fn=lambda x: x  # now dictionary values are not merged!
+    )
     ## 4. Build & Load models
     if not args.trained:
         model, model_bert, tokenizer, bert_config = get_models(args, BERT_PT_PATH)
@@ -768,6 +769,22 @@ if __name__ == '__main__':
 
             print(f" Best Dev lx acc: {acc_lx_t_best} at epoch: {epoch_best}")
 
+    if args.do_test:
+        with torch.no_grad():
+            acc_dev, results_dev, cnt_list = test(test_loader,
+                                                  test_table,
+                                                  model,
+                                                  model_bert,
+                                                  bert_config,
+                                                  tokenizer,
+                                                  args.max_seq_length,
+                                                  args.num_target_layers,
+                                                  detail=False,
+                                                  path_db=path_wikisql,
+                                                  st_pos=0,
+                                                  dset_name='test', EG=args.EG)
+        print(acc_dev, results_dev)
+
     if args.do_infer:
         # To use recent corenlp: https://github.com/stanfordnlp/python-stanford-corenlp
         # 1. pip install stanford-corenlp
@@ -790,6 +807,7 @@ if __name__ == '__main__':
         for i in range(n_Q):
             if n_Q > 1:
                 nlu1 = input('Type question: ')
+
             pr_sql_i, pr_ans = infer(
                 nlu1,
                 table_name, data_table, path_db, db_name,
